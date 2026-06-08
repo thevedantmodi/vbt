@@ -4,3 +4,5 @@ dist/
 .vercel/
 drizzle/
 *.js.map
+.vercel
+.env*

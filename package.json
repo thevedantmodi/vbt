@@ -29,7 +29,7 @@
     "drizzle-kit": "^0.31.10",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.8.3",
-    "vercel": "^50.41.0",
+    "vercel": "^54.10.1",
     "vite": "^8.0.9"
   }
 }
