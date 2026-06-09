@@ -1,6 +1,6 @@
 {
-  "name": "Monthly Budget",
-  "short_name": "Budget",
+  "name": "Vedant's Budget Tool",
+  "short_name": "VBT",
   "description": "Track monthly spend against plan, by category.",
   "start_url": "/",
   "display": "standalone",
