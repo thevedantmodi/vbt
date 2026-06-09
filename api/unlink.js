@@ -75,7 +75,8 @@ async function handler(_req, res) {
   try {
     const allItems = await db.select().from(items);
     for (const item of allItems) {
-      await plaidClient.itemRemove({ access_token: item.accessToken });
+      await plaidClient.itemRemove({ access_token: item.accessToken }).catch(() => {
+      });
     }
     await db.delete(items);
     res.json({ ok: true });
