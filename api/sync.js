@@ -139,6 +139,6 @@ async function handler(_req, res) {
     }
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.response?.data?.error_message || err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 }

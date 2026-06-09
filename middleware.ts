@@ -4,7 +4,9 @@ export const config = { matcher: '/:path*' };
 
 export default function middleware(request: Request) {
   const password = process.env.APP_PASSWORD;
-  if (!password) return next();
+  if (!password) {
+    return new Response('Server misconfigured: APP_PASSWORD not set', { status: 503 });
+  }
 
   const auth = request.headers.get('authorization');
   if (auth) {

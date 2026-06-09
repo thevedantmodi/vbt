@@ -72,8 +72,12 @@ var db = (0, import_neon_http.drizzle)(sql, { schema: { items, transactions, cat
 
 // _api/plaid/exchange_public_token.ts
 async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   try {
     const { public_token } = req.body;
+    if (!public_token || typeof public_token !== "string") {
+      return res.status(400).json({ error: "Invalid public_token" });
+    }
     const response = await plaidClient.itemPublicTokenExchange({ public_token });
     await db.insert(items).values({
       accessToken: response.data.access_token,
@@ -85,6 +89,6 @@ async function handler(req, res) {
     });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.response?.data?.error_message || err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 }

@@ -55,12 +55,32 @@ var sql = (0, import_serverless.neon)(process.env.DATABASE_URL);
 var db = (0, import_neon_http.drizzle)(sql, { schema: { items, transactions, categoryOverrides, budgets } });
 
 // _api/override.ts
+var VALID_CATEGORIES = /* @__PURE__ */ new Set([
+  "rent",
+  "savings",
+  "groceries",
+  "food",
+  "drink",
+  "transit",
+  "subs",
+  "personal",
+  "fitness",
+  "travel",
+  "other"
+]);
 async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   try {
     const { transactionId, categoryId } = req.body;
+    if (!transactionId || typeof transactionId !== "string") {
+      return res.status(400).json({ error: "Invalid transactionId" });
+    }
+    if (!categoryId || !VALID_CATEGORIES.has(categoryId)) {
+      return res.status(400).json({ error: "Invalid categoryId" });
+    }
     await db.insert(categoryOverrides).values({ transactionId, categoryId }).onConflictDoUpdate({ target: categoryOverrides.transactionId, set: { categoryId } });
     res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 }
