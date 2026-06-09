@@ -1,0 +1,22 @@
+{
+  "name": "Monthly Budget",
+  "short_name": "Budget",
+  "description": "Track monthly spend against plan, by category.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F2EC",
+  "theme_color": "#4F63D2",
+  "icons": [
+    {
+      "src": "/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
