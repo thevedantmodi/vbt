@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { eq } from 'drizzle-orm';
-import { plaidClient } from '../lib/plaidClient';
-import { db } from '../lib/db/index';
-import { items, transactions } from '../lib/db/schema';
-import { categorize } from '../lib/categorize';
+import { plaidClient } from './_lib/plaidClient';
+import { db } from './_lib/db/index';
+import { items, transactions } from './_lib/db/schema';
+import { categorize } from './_lib/categorize';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
