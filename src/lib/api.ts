@@ -26,5 +26,7 @@ export const api = {
     post<{ ok: boolean }>("/api/plaid/exchange_public_token", { public_token }),
   getTransactions: () =>
     get<{ transactions: Transaction[] }>("/api/transactions"),
+  sync: () => post<{ ok: boolean }>("/api/sync"),
   status: () => get<{ linked: boolean; env: string }>("/api/status"),
+  unlink: () => post<{ ok: boolean }>("/api/unlink"),
 };

@@ -63,6 +63,14 @@ export default function App() {
     setLinkToken(link_token);
   };
 
+  const unlink = async () => {
+    if (!confirm("Disconnect your bank? This removes all synced data.")) return;
+    await api.unlink();
+    setLinked(false);
+    setTransactions(SAMPLE_TRANSACTIONS);
+    setDemo(true);
+  };
+
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: async (public_token) => {
@@ -118,12 +126,20 @@ export default function App() {
             </button>
           )}
           {linked && (
-            <button
-              onClick={refresh}
-              style={{ ...btn, background: dark ? "#111" : "#fff" }}
-            >
-              {loading ? "Syncing…" : "↻ Sync"}
-            </button>
+            <>
+              <button
+                onClick={refresh}
+                style={{ ...btn, background: dark ? "#111" : "#fff" }}
+              >
+                {loading ? "Syncing…" : "↻ Sync"}
+              </button>
+              <button
+                onClick={unlink}
+                style={{ ...btn, background: dark ? "#111" : "#fff", color: "#e05" }}
+              >
+                Disconnect bank
+              </button>
+            </>
           )}
           <button
             onClick={() => setDark((v) => !v)}
@@ -184,9 +200,14 @@ export default function App() {
           </button>
         )}
         {linked && (
-          <button onClick={refresh} style={btn}>
-            {loading ? "Syncing…" : "↻ Sync"}
-          </button>
+          <>
+            <button onClick={refresh} style={btn}>
+              {loading ? "Syncing…" : "↻ Sync"}
+            </button>
+            <button onClick={unlink} style={{ ...btn, color: "#e05" }}>
+              Disconnect
+            </button>
+          </>
         )}
         {demo && (
           <span style={{ color: dark ? "#888" : "#666" }}>
