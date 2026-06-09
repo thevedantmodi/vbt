@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { eq } from 'drizzle-orm';
 import { plaidClient } from '../lib/plaidClient';
-import { db } from '../lib/db';
+import { db } from '../lib/db/index';
 import { items, transactions } from '../lib/db/schema';
 import { categorize } from '../lib/categorize';
 

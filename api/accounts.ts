@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { plaidClient } from '../lib/plaidClient';
-import { db } from '../lib/db';
+import { db } from '../lib/db/index';
 import { items } from '../lib/db/schema';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {

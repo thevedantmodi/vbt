@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { eq } from 'drizzle-orm';
-import { db } from '../lib/db';
+import { db } from '../lib/db/index';
 import { transactions, categoryOverrides } from '../lib/db/schema';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
