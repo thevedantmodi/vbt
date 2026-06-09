@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import Ring from './Ring';
 import CatIcon from './CatIcon';
+import BudgetInput from './BudgetInput';
 import { tokens, NUM, ThemeTokens } from './theme';
-import { computeMonth, statusOf, fmt, fmtSigned, ComputedCategory, Transaction } from '../lib/budget';
+import { computeMonth, statusOf, fmt, fmtSigned, ComputedCategory, Transaction, CATEGORIES } from '../lib/budget';
+import { api } from '../lib/api';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -11,9 +13,19 @@ interface Props {
   dark?: boolean;
   accent?: string;
   budgets?: Record<string, number>;
+  onSetBudget?: (categoryId: string, planned: number) => void;
+  onRefreshTransactions?: () => void;
+  onToggleDark?: () => void;
+  linked?: boolean;
+  serverUp?: boolean;
+  loading?: boolean;
+  demo?: boolean;
+  onLink?: () => void;
+  onSync?: () => void;
+  onUnlink?: () => void;
 }
 
-export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {} }: Props) {
+export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onRefreshTransactions, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -43,6 +55,15 @@ export default function DesktopScreen({ transactions = [], dark = false, accent 
             {MONTH_NAMES[d.month]} {d.year}
           </span>
           <Chev dir="r" disabled={atFuture} onClick={() => step(1)} T={T} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {demo && <span style={{ fontSize: 12, color: T.faint, border: `1px solid ${T.hair}`, borderRadius: 99, padding: '4px 10px' }}>sample data</span>}
+          {!linked && <TopBtn onClick={onLink!} disabled={!serverUp} T={T}>{serverUp ? '+ Connect bank' : 'Server offline'}</TopBtn>}
+          {linked && <TopBtn onClick={onSync!} T={T}>{loading ? 'Syncing…' : '↻ Sync'}</TopBtn>}
+          {linked && <TopBtn onClick={onUnlink!} T={T} danger>Disconnect</TopBtn>}
+          <button onClick={onToggleDark} style={{ width: 32, height: 32, borderRadius: 99, border: `1px solid ${T.hair}`, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: T.muted }}>
+            {dark ? '☀︎' : '☾'}
+          </button>
         </div>
       </div>
 
@@ -114,7 +135,7 @@ export default function DesktopScreen({ transactions = [], dark = false, accent 
 
           {/* transaction panel */}
           {selectedCat && (
-            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} />
+            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} onRefreshTransactions={onRefreshTransactions ?? (() => {})} />
           )}
         </div>
       </div>
@@ -165,9 +186,11 @@ interface TxPanelProps {
   year: number;
   isCurrent: boolean;
   onClose: () => void;
+  onSetBudget: (categoryId: string, planned: number) => void;
+  onRefreshTransactions: () => void;
 }
 
-function TxPanel({ cat, T, dark, year, isCurrent, onClose }: TxPanelProps) {
+function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefreshTransactions }: TxPanelProps) {
   const over = cat.diff > 0 && !cat.fixed;
   return (
     <div style={{ borderLeft: `1px solid ${T.hair}`, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)', position: 'sticky', top: 0 }}>
@@ -182,7 +205,12 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose }: TxPanelProps) {
           </div>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 99, border: `1px solid ${T.hair}`, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.muted, fontSize: 16 }}>×</button>
         </div>
-        <div style={{ fontSize: 13, color: T.muted, ...NUM }}>{fmt(cat.spent)} of {fmt(cat.planned)} · {Math.round(cat.pct * 100)}%</div>
+        <div style={{ fontSize: 13, color: T.muted, ...NUM }}>
+          {fmt(cat.spent)} of{' '}
+          <BudgetInput value={cat.planned} T={T} fontSize={13} onSave={(v) => onSetBudget(cat.id, v)} />
+          {' '}· {Math.round(cat.pct * 100)}%
+        </div>
+        <div style={{ fontSize: 11, color: T.faint, marginTop: 3 }}>✎ Click the budget amount to edit</div>
         {isCurrent && (
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <MiniStat label={cat.fixed ? 'Recurring' : 'Projected'} value={fmt(cat.projected)} T={T} />
@@ -198,15 +226,54 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose }: TxPanelProps) {
           <div style={{ fontSize: 14, color: T.faint, padding: '16px 0' }}>No transactions this month.</div>
         )}
         {cat.txs.map((t, i) => (
-          <div key={t.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
-              <div style={{ fontSize: 11.5, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
-            </div>
-            <div style={{ fontSize: 13.5, marginLeft: 12, flexShrink: 0, ...NUM }}>{fmt(t.amount, true)}</div>
-          </div>
+          <DesktopTxRow key={t.id || i} t={t} i={i} currentCatId={cat.id} year={year} T={T} dark={dark} onRefreshTransactions={onRefreshTransactions} />
         ))}
       </div>
+    </div>
+  );
+}
+
+interface DesktopTxRowProps { t: Transaction; i: number; currentCatId: string; year: number; T: ThemeTokens; dark: boolean; onRefreshTransactions: () => void; }
+function DesktopTxRow({ t, i, currentCatId, year, T, dark, onRefreshTransactions }: DesktopTxRowProps) {
+  const [catId, setCatId] = useState(currentCatId);
+  const [hidden, setHidden] = useState(false);
+
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCat = e.target.value;
+    setCatId(newCat);
+    await api.setOverride(t.id, newCat).catch(() => {});
+    onRefreshTransactions();
+  };
+
+  const handleHide = async () => {
+    setHidden(true);
+    await api.hideTransaction(t.id).catch(() => {});
+    onRefreshTransactions();
+  };
+
+  if (hidden) return null;
+
+  return (
+    <div style={{ padding: '11px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+          <div style={{ fontSize: 11.5, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 12, flexShrink: 0 }}>
+          <div style={{ fontSize: 13.5, ...NUM }}>{fmt(t.amount, true)}</div>
+          <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
+        </div>
+      </div>
+      <select value={catId} onChange={handleChange} style={{
+        marginTop: 5, fontSize: 11, color: T.muted,
+        background: dark ? '#ffffff10' : '#00000008',
+        border: `1px solid ${T.hair}`, borderRadius: 5,
+        padding: '2px 6px', cursor: 'pointer', fontFamily: 'inherit',
+        outline: 'none', width: '100%',
+      }}>
+        {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
     </div>
   );
 }
@@ -242,6 +309,21 @@ function Chev({ dir, onClick, disabled, T }: ChevProps) {
       <svg width="8" height="13" viewBox="0 0 9 14" fill="none" style={{ transform: dir === 'r' ? 'none' : 'scaleX(-1)' }}>
         <path d="M1.5 1L7 7l-5.5 6" stroke={T.text} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
+    </button>
+  );
+}
+
+interface TopBtnProps { children: React.ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean; T: ThemeTokens; }
+function TopBtn({ children, onClick, disabled, danger, T }: TopBtnProps) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      fontSize: 12.5, padding: '5px 12px', borderRadius: 99,
+      border: `1px solid ${danger ? '#DD6B5A44' : T.hair}`,
+      background: 'transparent', color: danger ? '#DD6B5A' : T.text,
+      cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.4 : 1,
+      fontFamily: 'inherit', whiteSpace: 'nowrap',
+    }}>
+      {children}
     </button>
   );
 }

@@ -1,11 +1,11 @@
 {
   "name": "vbt",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:full": "vercel dev",
-    "build": "vite build",
+    "build": "node build-api.mjs && vite build",
+    "build:api": "node build-api.mjs",
     "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
+    "@vercel/edge": "^1.3.1",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "plaid": "^42.1.0",
@@ -28,6 +29,7 @@
     "@vercel/node": "^2.3.0",
     "@vitejs/plugin-react": "^6.0.1",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.28.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.8.3",
     "vercel": "^54.10.1",

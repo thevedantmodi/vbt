@@ -1,5 +1,5 @@
 {
-  "buildCommand": "vite build",
+  "buildCommand": "node build-api.mjs && vite build",
   "outputDirectory": "dist",
   "framework": "vite"
 }

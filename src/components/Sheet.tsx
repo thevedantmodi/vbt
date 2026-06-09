@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import Ring from './Ring';
 import CatIcon from './CatIcon';
+import BudgetInput from './BudgetInput';
 import { NUM, ThemeTokens } from './theme';
-import { fmt, fmtSigned, ComputedCategory } from '../lib/budget';
+import { fmt, fmtSigned, ComputedCategory, CATEGORIES, Transaction } from '../lib/budget';
+import { api } from '../lib/api';
 
 interface Props {
   cat: ComputedCategory | null;
@@ -11,9 +14,11 @@ interface Props {
   year: number;
   isCurrent: boolean;
   onClose: () => void;
+  onSetBudget: (categoryId: string, planned: number) => void;
+  onRefreshTransactions: () => void;
 }
 
-export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClose }: Props) {
+export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClose, onSetBudget, onRefreshTransactions }: Props) {
   const showing = !!cat;
   const c = cat;
   const txs = cat ? cat.txs : [];
@@ -38,7 +43,11 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 19, fontWeight: 680, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                <div style={{ fontSize: 13, color: T.muted, ...NUM }}>{fmt(c.spent)} of {fmt(c.planned)} · {Math.round(c.pct * 100)}%</div>
+                <div style={{ fontSize: 13, color: T.muted, ...NUM }}>
+                  {fmt(c.spent)} of{' '}
+                  <BudgetInput value={c.planned} T={T} fontSize={13} onSave={(v) => onSetBudget(c.id, v)} />
+                  {' '}· {Math.round(c.pct * 100)}%
+                </div>
               </div>
               <Ring size={52} stroke={6} value={c.pct} color={over ? '#DD6B5A' : c.color} track={T.track} rounded>
                 <span style={{ fontSize: 12, fontWeight: 700, ...NUM }}>{Math.round(c.pct * 100)}%</span>
@@ -61,13 +70,7 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
                 <div style={{ fontSize: 14, color: T.faint, padding: '18px 0' }}>No transactions this month.</div>
               )}
               {txs.map((t, i) => (
-                <div key={t.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
-                    <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
-                  </div>
-                  <div style={{ fontSize: 14.5, marginLeft: 12, ...NUM }}>{fmt(t.amount, true)}</div>
-                </div>
+                <TxRow key={t.id || i} t={t} i={i} year={year} T={T} dark={dark} currentCatId={c.id} onRefreshTransactions={onRefreshTransactions} />
               ))}
             </div>
           </>
@@ -77,13 +80,67 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
   );
 }
 
-interface MiniProps {
-  label: string;
-  value: string;
-  color?: string;
+interface TxRowProps {
+  t: Transaction;
+  i: number;
+  year: number;
   T: ThemeTokens;
+  dark: boolean;
+  currentCatId: string;
+  onRefreshTransactions: () => void;
 }
 
+function TxRow({ t, i, year, T, dark, currentCatId, onRefreshTransactions }: TxRowProps) {
+  const [catId, setCatId] = useState(currentCatId);
+  const [hidden, setHidden] = useState(false);
+
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCat = e.target.value;
+    setCatId(newCat);
+    await api.setOverride(t.id, newCat).catch(() => {});
+    onRefreshTransactions();
+  };
+
+  const handleHide = async () => {
+    setHidden(true);
+    await api.hideTransaction(t.id).catch(() => {});
+    onRefreshTransactions();
+  };
+
+  if (hidden) return null;
+
+  return (
+    <div style={{ padding: '12px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 12, flexShrink: 0 }}>
+          <div style={{ fontSize: 14.5, ...NUM }}>{fmt(t.amount, true)}</div>
+          <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
+        </div>
+      </div>
+      <select
+        value={catId}
+        onChange={handleChange}
+        style={{
+          marginTop: 6, fontSize: 11.5, color: T.muted,
+          background: dark ? '#ffffff10' : '#00000008',
+          border: `1px solid ${T.hair}`, borderRadius: 6,
+          padding: '3px 6px', cursor: 'pointer', fontFamily: 'inherit',
+          outline: 'none', width: '100%',
+        }}
+      >
+        {CATEGORIES.map((cat) => (
+          <option key={cat.id} value={cat.id}>{cat.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+interface MiniProps { label: string; value: string; color?: string; T: ThemeTokens; }
 function Mini({ label, value, color, T }: MiniProps) {
   return (
     <div style={{ flex: 1, background: T.surface2, border: `1px solid ${T.hair}`, borderRadius: 13, padding: '10px 11px' }}>

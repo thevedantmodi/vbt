@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { eq } from 'drizzle-orm';
-import { db } from '../lib/db';
-import { transactions, categoryOverrides } from '../lib/db/schema';
+import { db, transactions, categoryOverrides } from './_db';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
@@ -15,7 +14,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         override:   categoryOverrides.categoryId,
       })
       .from(transactions)
-      .leftJoin(categoryOverrides, eq(transactions.id, categoryOverrides.transactionId));
+      .leftJoin(categoryOverrides, eq(transactions.id, categoryOverrides.transactionId))
+      .where(eq(transactions.hidden, false));
 
     res.json({
       transactions: rows.map((r) => ({
@@ -27,6 +27,6 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       })),
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 }

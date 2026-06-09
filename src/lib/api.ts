@@ -26,5 +26,14 @@ export const api = {
     post<{ ok: boolean }>("/api/plaid/exchange_public_token", { public_token }),
   getTransactions: () =>
     get<{ transactions: Transaction[] }>("/api/transactions"),
+  sync: () => post<{ ok: boolean }>("/api/sync"),
   status: () => get<{ linked: boolean; env: string }>("/api/status"),
+  unlink: () => post<{ ok: boolean }>("/api/unlink"),
+  getBudgets: () => get<{ budgets: Record<string, number> }>("/api/budgets"),
+  setBudget: (categoryId: string, planned: number) =>
+    post<{ ok: boolean }>("/api/budgets", { categoryId, planned }),
+  setOverride: (transactionId: string, categoryId: string) =>
+    post<{ ok: boolean }>("/api/override", { transactionId, categoryId }),
+  hideTransaction: (transactionId: string) =>
+    post<{ ok: boolean }>("/api/hide", { transactionId }),
 };
