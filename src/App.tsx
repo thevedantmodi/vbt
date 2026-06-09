@@ -63,11 +63,7 @@ export default function App() {
     }
   }, [serverUp]);
 
-  const handleRecategorize = useCallback((txId: string, categoryId: string) => {
-    setTransactions((prev) => prev.map((t) => t.id === txId ? { ...t, categoryId } : t));
-  }, []);
-
-  const startLink = async () => {
+const startLink = async () => {
     const { link_token } = await api.createLinkToken();
     setLinkToken(link_token);
   };
@@ -104,7 +100,6 @@ export default function App() {
         accent={ACCENT}
         budgets={budgets}
         onSetBudget={handleSetBudget}
-        onRecategorize={handleRecategorize}
         onToggleDark={() => setDark((v) => !v)}
         {...bankProps}
       />
@@ -137,7 +132,6 @@ export default function App() {
           accent={ACCENT}
           budgets={budgets}
           onSetBudget={handleSetBudget}
-          onRecategorize={handleRecategorize}
           onToggleDark={() => setDark((v) => !v)}
           {...bankProps}
         />

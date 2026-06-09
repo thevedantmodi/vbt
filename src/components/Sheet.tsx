@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Ring from './Ring';
 import CatIcon from './CatIcon';
 import BudgetInput from './BudgetInput';
@@ -14,10 +15,9 @@ interface Props {
   isCurrent: boolean;
   onClose: () => void;
   onSetBudget: (categoryId: string, planned: number) => void;
-  onRecategorize: (txId: string, categoryId: string) => void;
 }
 
-export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClose, onSetBudget, onRecategorize }: Props) {
+export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClose, onSetBudget }: Props) {
   const showing = !!cat;
   const c = cat;
   const txs = cat ? cat.txs : [];
@@ -69,7 +69,7 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
                 <div style={{ fontSize: 14, color: T.faint, padding: '18px 0' }}>No transactions this month.</div>
               )}
               {txs.map((t, i) => (
-                <TxRow key={t.id || i} t={t} i={i} year={year} T={T} dark={dark} currentCatId={c.id} onRecategorize={onRecategorize} />
+                <TxRow key={t.id || i} t={t} i={i} year={year} T={T} dark={dark} currentCatId={c.id} />
               ))}
             </div>
           </>
@@ -86,14 +86,18 @@ interface TxRowProps {
   T: ThemeTokens;
   dark: boolean;
   currentCatId: string;
-  onRecategorize: (txId: string, categoryId: string) => void;
 }
 
-function TxRow({ t, i, year, T, dark, currentCatId, onRecategorize }: TxRowProps) {
+function TxRow({ t, i, year, T, dark, currentCatId }: TxRowProps) {
+  const [catId, setCatId] = useState(currentCatId);
+  const [saved, setSaved] = useState(false);
+
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCat = e.target.value;
+    setCatId(newCat);
     await api.setOverride(t.id, newCat).catch(() => {});
-    onRecategorize(t.id, newCat);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   return (
@@ -103,10 +107,13 @@ function TxRow({ t, i, year, T, dark, currentCatId, onRecategorize }: TxRowProps
           <div style={{ fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
           <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
         </div>
-        <div style={{ fontSize: 14.5, marginLeft: 12, flexShrink: 0, ...NUM }}>{fmt(t.amount, true)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
+          {saved && <span style={{ fontSize: 11, color: '#3FAE7A' }}>Saved</span>}
+          <div style={{ fontSize: 14.5, ...NUM }}>{fmt(t.amount, true)}</div>
+        </div>
       </div>
       <select
-        value={currentCatId}
+        value={catId}
         onChange={handleChange}
         style={{
           marginTop: 6, fontSize: 11.5, color: T.muted,
