@@ -26,6 +26,7 @@ export default function App() {
   const [linked, setLinked] = useState(false);
   const [transactions, setTransactions] =
     useState<Transaction[]>(SAMPLE_TRANSACTIONS);
+  const [budgets, setBudgets] = useState<Record<string, number>>({});
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [demo, setDemo] = useState(true);
@@ -40,7 +41,9 @@ export default function App() {
           setLinked(true);
           refresh();
         }
+        return api.getBudgets();
       })
+      .then(({ budgets }) => setBudgets(budgets))
       .catch(() => setServerUp(false));
   }, []);
 
@@ -57,6 +60,17 @@ export default function App() {
       setLoading(false);
     }
   }, []);
+
+  const handleSetBudget = useCallback(async (categoryId: string, planned: number) => {
+    setBudgets((prev) => ({ ...prev, [categoryId]: planned }));
+    if (serverUp) {
+      try {
+        await api.setBudget(categoryId, planned);
+      } catch (e) {
+        console.warn("Failed to save budget:", (e as Error).message);
+      }
+    }
+  }, [serverUp]);
 
   const startLink = async () => {
     const { link_token } = await api.createLinkToken();
@@ -84,6 +98,7 @@ export default function App() {
   useEffect(() => {
     if (linkToken && ready) open();
   }, [linkToken, ready, open]);
+
   if (desktop) {
     return (
       <div style={{ fontFamily: "system-ui", fontSize: 13 }}>
@@ -157,6 +172,8 @@ export default function App() {
           transactions={transactions}
           dark={dark}
           accent={ACCENT}
+          budgets={budgets}
+          onSetBudget={handleSetBudget}
         />
       </div>
     );
@@ -229,6 +246,8 @@ export default function App() {
           transactions={transactions}
           dark={dark}
           accent={ACCENT}
+          budgets={budgets}
+          onSetBudget={handleSetBudget}
         />
       </div>
     </div>

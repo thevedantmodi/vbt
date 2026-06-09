@@ -12,9 +12,10 @@ interface Props {
   dark?: boolean;
   accent?: string;
   budgets?: Record<string, number>;
+  onSetBudget?: (categoryId: string, planned: number) => void;
 }
 
-export default function EditorialScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {} }: Props) {
+export default function EditorialScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -86,7 +87,7 @@ export default function EditorialScreen({ transactions = [], dark = false, accen
         </div>
       </div>
 
-      <Sheet cat={oc} T={T} dark={dark} monthLabel={MONTH_NAMES[d.month]} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} />
+      <Sheet cat={oc} T={T} dark={dark} monthLabel={MONTH_NAMES[d.month]} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} />
     </div>
   );
 }
@@ -116,6 +117,7 @@ function CatCard({ c, T, dark, onClick }: CatCardProps) {
       <div>
         <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
         <div style={{ fontSize: 13, color: T.muted, marginTop: 2, ...NUM }}>{fmt(c.spent)} <span style={{ color: T.faint }}>/ {fmt(c.planned)}</span></div>
+        <div style={{ fontSize: 11, color: T.faint, marginTop: 4 }}>Tap to edit budget</div>
       </div>
     </button>
   );
