@@ -1,23 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { next } from '@vercel/edge';
 
 export const config = { matcher: '/:path*' };
 
-export function middleware(req: NextRequest) {
-  const auth = req.headers.get('authorization');
+export default function middleware(request: Request) {
   const password = process.env.APP_PASSWORD;
+  if (!password) return next();
 
-  if (!password) return NextResponse.next();
-
+  const auth = request.headers.get('authorization');
   if (auth) {
     const [scheme, encoded] = auth.split(' ');
     if (scheme === 'Basic' && encoded) {
-      const decoded = atob(encoded);
-      const [, pass] = decoded.split(':');
-      if (pass === password) return NextResponse.next();
+      const [, pass] = atob(encoded).split(':');
+      if (pass === password) return next();
     }
   }
 
-  return new NextResponse('Unauthorized', {
+  return new Response('Unauthorized', {
     status: 401,
     headers: { 'WWW-Authenticate': 'Basic realm="vbt"' },
   });
