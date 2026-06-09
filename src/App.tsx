@@ -84,7 +84,6 @@ export default function App() {
   useEffect(() => {
     if (linkToken && ready) open();
   }, [linkToken, ready, open]);
-  console.log("testing");
   if (desktop) {
     return (
       <div style={{ fontFamily: "system-ui", fontSize: 13 }}>
