@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { plaidClient, COUNTRY_CODES, PRODUCTS } from '../_lib/plaidClient';
+import { plaidClient, COUNTRY_CODES, PRODUCTS } from '../_plaid';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {

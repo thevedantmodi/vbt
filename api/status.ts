@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { db } from './_lib/db/index';
-import { items } from './_lib/db/schema';
+import { db, items } from './_db';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   const rows = await db.select().from(items).limit(1);
