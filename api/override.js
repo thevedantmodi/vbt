@@ -17,13 +17,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// _api/transactions.ts
-var transactions_exports = {};
-__export(transactions_exports, {
+// _api/override.ts
+var override_exports = {};
+__export(override_exports, {
   default: () => handler
 });
-module.exports = __toCommonJS(transactions_exports);
-var import_drizzle_orm = require("drizzle-orm");
+module.exports = __toCommonJS(override_exports);
 
 // _api/_db.ts
 var import_serverless = require("@neondatabase/serverless");
@@ -55,27 +54,33 @@ var budgets = (0, import_pg_core.pgTable)("budgets", {
 var sql = (0, import_serverless.neon)(process.env.DATABASE_URL);
 var db = (0, import_neon_http.drizzle)(sql, { schema: { items, transactions, categoryOverrides, budgets } });
 
-// _api/transactions.ts
-async function handler(_req, res) {
+// _api/override.ts
+var VALID_CATEGORIES = /* @__PURE__ */ new Set([
+  "rent",
+  "savings",
+  "groceries",
+  "food",
+  "drink",
+  "transit",
+  "subs",
+  "personal",
+  "fitness",
+  "travel",
+  "other"
+]);
+async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   try {
-    const rows = await db.select({
-      id: transactions.id,
-      name: transactions.name,
-      amount: transactions.amount,
-      date: transactions.date,
-      categoryId: transactions.categoryId,
-      override: categoryOverrides.categoryId
-    }).from(transactions).leftJoin(categoryOverrides, (0, import_drizzle_orm.eq)(transactions.id, categoryOverrides.transactionId));
-    res.json({
-      transactions: rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        amount: Number(r.amount),
-        date: r.date,
-        categoryId: r.override ?? r.categoryId
-      }))
-    });
-  } catch (err) {
+    const { transactionId, categoryId } = req.body;
+    if (!transactionId || typeof transactionId !== "string") {
+      return res.status(400).json({ error: "Invalid transactionId" });
+    }
+    if (!categoryId || !VALID_CATEGORIES.has(categoryId)) {
+      return res.status(400).json({ error: "Invalid categoryId" });
+    }
+    await db.insert(categoryOverrides).values({ transactionId, categoryId }).onConflictDoUpdate({ target: categoryOverrides.transactionId, set: { categoryId } });
+    res.json({ ok: true });
+  } catch {
     res.status(500).json({ error: "Internal server error" });
   }
 }

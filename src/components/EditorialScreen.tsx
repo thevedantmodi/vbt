@@ -13,9 +13,18 @@ interface Props {
   accent?: string;
   budgets?: Record<string, number>;
   onSetBudget?: (categoryId: string, planned: number) => void;
+  onRecategorize?: (txId: string, categoryId: string) => void;
+  onToggleDark?: () => void;
+  linked?: boolean;
+  serverUp?: boolean;
+  loading?: boolean;
+  demo?: boolean;
+  onLink?: () => void;
+  onSync?: () => void;
+  onUnlink?: () => void;
 }
 
-export default function EditorialScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget }: Props) {
+export default function EditorialScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onRecategorize, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -37,7 +46,24 @@ export default function EditorialScreen({ transactions = [], dark = false, accen
   return (
     <div style={{ position: 'relative', height: '100%', background: T.bg, color: T.text, fontFamily: '-apple-system, system-ui, sans-serif', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ padding: '52px 24px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        {/* top utility row */}
+        <div style={{ padding: '16px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {!linked && (
+              <MobileBtn onClick={onLink!} disabled={!serverUp} T={T}>
+                {serverUp ? '+ Connect bank' : 'Offline'}
+              </MobileBtn>
+            )}
+            {linked && <MobileBtn onClick={onSync!} T={T}>{loading ? 'Syncing…' : '↻ Sync'}</MobileBtn>}
+            {linked && <MobileBtn onClick={onUnlink!} T={T} danger>Disconnect</MobileBtn>}
+            {demo && !linked && <span style={{ fontSize: 11, color: T.faint, alignSelf: 'center', marginLeft: 4 }}>sample data</span>}
+          </div>
+          <button onClick={onToggleDark} style={{ width: 32, height: 32, borderRadius: 99, border: `1px solid ${T.hair}`, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: T.muted }}>
+            {dark ? '☀︎' : '☾'}
+          </button>
+        </div>
+
+        <div style={{ padding: '24px 24px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: 12.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.faint, fontWeight: 600 }}>Monthly budget</div>
             <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.05, marginTop: 4 }}>{MONTH_NAMES[d.month]}</div>
@@ -87,7 +113,7 @@ export default function EditorialScreen({ transactions = [], dark = false, accen
         </div>
       </div>
 
-      <Sheet cat={oc} T={T} dark={dark} monthLabel={MONTH_NAMES[d.month]} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} />
+      <Sheet cat={oc} T={T} dark={dark} monthLabel={MONTH_NAMES[d.month]} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} onRecategorize={onRecategorize ?? (() => {})} />
     </div>
   );
 }
@@ -128,6 +154,21 @@ interface ChevProps {
   onClick: () => void;
   disabled?: boolean;
   T: ThemeTokens;
+}
+
+interface MobileBtnProps { children: React.ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean; T: ThemeTokens; }
+function MobileBtn({ children, onClick, disabled, danger, T }: MobileBtnProps) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      fontSize: 12, padding: '5px 11px', borderRadius: 99,
+      border: `1px solid ${danger ? '#DD6B5A44' : T.hair}`,
+      background: 'transparent', color: danger ? '#DD6B5A' : T.text,
+      cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.4 : 1,
+      fontFamily: 'inherit', whiteSpace: 'nowrap',
+    }}>
+      {children}
+    </button>
+  );
 }
 
 function Chev({ dir, onClick, disabled, T }: ChevProps) {

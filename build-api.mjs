@@ -13,6 +13,7 @@ await build({
     'plaid/exchange_public_token': '_api/plaid/exchange_public_token.ts',
     'unlink': '_api/unlink.ts',
     'budgets': '_api/budgets.ts',
+    'override': '_api/override.ts',
   },
   bundle: true,
   platform: 'node',
