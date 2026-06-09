@@ -11,7 +11,7 @@ const EXCLUDED_PFC = new Set([
   'BANK_FEES',
 ]);
 
-const EXCLUDED_NAME = /payment|thank you|autopay|online pmt|web pmt/i;
+const EXCLUDED_NAME = /payment|thank you|autopay|auto pay|online pmt|web pmt/i;
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {

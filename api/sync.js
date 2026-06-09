@@ -102,7 +102,7 @@ var EXCLUDED_PFC = /* @__PURE__ */ new Set([
   "LOAN_PAYMENTS",
   "BANK_FEES"
 ]);
-var EXCLUDED_NAME = /payment|thank you|autopay|online pmt|web pmt/i;
+var EXCLUDED_NAME = /payment|thank you|autopay|auto pay|online pmt|web pmt/i;
 async function handler(_req, res) {
   try {
     const allItems = await db.select().from(items);
