@@ -125,7 +125,8 @@ async function handler(_req, res) {
           amount: String(t.amount),
           date: t.date,
           categoryId: categorize(t),
-          pending: false
+          pending: false,
+          hidden: false
         }));
         if (toInsert.length > 0) {
           await db.insert(transactions).values(toInsert).onConflictDoUpdate({

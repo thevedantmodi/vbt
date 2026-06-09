@@ -38,6 +38,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
           date:       t.date,
           categoryId: categorize(t),
           pending:    false,
+          hidden:     false,
         }));
 
         if (toInsert.length > 0) {
