@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Ring from './Ring';
 import CatIcon from './CatIcon';
 import BudgetInput from './BudgetInput';
+import CatSelect from './CatSelect';
 import { tokens, NUM, ThemeTokens } from './theme';
 import { computeMonth, statusOf, fmt, fmtSigned, ComputedCategory, Transaction, CATEGORIES } from '../lib/budget';
 import { api } from '../lib/api';
@@ -192,8 +193,61 @@ interface TxPanelProps {
 
 function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefreshTransactions }: TxPanelProps) {
   const over = cat.diff > 0 && !cat.fixed;
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [dragRect, setDragRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const dragOrigin = useRef<{ x: number; y: number } | null>(null);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button,select,input')) return;
+    e.preventDefault();
+    dragOrigin.current = { x: e.clientX, y: e.clientY };
+
+    const onMove = (me: MouseEvent) => {
+      if (!dragOrigin.current) return;
+      const ox = dragOrigin.current.x, oy = dragOrigin.current.y;
+      const dx = me.clientX - ox, dy = me.clientY - oy;
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      const rect = { left: Math.min(ox, me.clientX), top: Math.min(oy, me.clientY), width: Math.abs(dx), height: Math.abs(dy) };
+      setDragRect(rect);
+      const newSel = new Set<string>();
+      listRef.current?.querySelectorAll<HTMLElement>('[data-txid]').forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (r.bottom >= rect.top && r.top <= rect.top + rect.height && r.right >= rect.left && r.left <= rect.left + rect.width)
+          newSel.add(el.dataset.txid!);
+      });
+      setSelectedIds(newSel);
+    };
+
+    const onUp = () => {
+      dragOrigin.current = null;
+      setDragRect(null);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  const hideSelected = async () => {
+    await Promise.all([...selectedIds].map(id => api.hideTransaction(id).catch(() => {})));
+    setSelectedIds(new Set());
+    onRefreshTransactions();
+  };
+
+  const recategorizeSelected = async (catId: string) => {
+    await Promise.all([...selectedIds].map(id => api.setOverride(id, catId).catch(() => {})));
+    setSelectedIds(new Set());
+    onRefreshTransactions();
+  };
+
   return (
     <div style={{ borderLeft: `1px solid ${T.hair}`, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)', position: 'sticky', top: 0 }}>
+      {dragRect && dragRect.width > 4 && (
+        <div style={{ position: 'fixed', left: dragRect.left, top: dragRect.top, width: dragRect.width, height: dragRect.height, border: '1.5px solid #4B9EFF88', background: '#4B9EFF14', pointerEvents: 'none', zIndex: 999, borderRadius: 3 }} />
+      )}
+
       {/* panel header */}
       <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${T.hair}` }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -220,30 +274,33 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefres
       </div>
 
       {/* transaction list */}
-      <div style={{ overflowY: 'auto', flex: 1, padding: '8px 20px 20px' }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.faint, fontWeight: 600, padding: '12px 0 4px' }}>Transactions</div>
+      <div ref={listRef} onMouseDown={onMouseDown} style={{ overflowY: 'auto', flex: 1, padding: '8px 20px 20px', userSelect: 'none' }}>
+        <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.faint, fontWeight: 600, padding: '12px 0 4px' }}>Transactions · drag to select</div>
         {cat.txs.length === 0 && (
           <div style={{ fontSize: 14, color: T.faint, padding: '16px 0' }}>No transactions this month.</div>
         )}
         {cat.txs.map((t, i) => (
-          <DesktopTxRow key={t.id || i} t={t} i={i} currentCatId={cat.id} year={year} T={T} dark={dark} onRefreshTransactions={onRefreshTransactions} />
+          <DesktopTxRow key={t.id || i} t={t} i={i} currentCatId={cat.id} year={year} T={T} dark={dark} isSelected={selectedIds.has(t.id)} onRefreshTransactions={onRefreshTransactions} />
         ))}
       </div>
+
+      {/* bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div style={{ borderTop: `1px solid ${T.hair}`, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, background: T.surface }}>
+          <span style={{ fontSize: 12, color: T.muted, flex: 1 }}>{selectedIds.size} selected</span>
+          <CatSelect value="" placeholder="Move to…" onChange={id => recategorizeSelected(id)} T={T} dark={dark} marginTop={0} />
+          <button onClick={hideSelected} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 5, border: `1px solid ${T.hair}`, background: 'transparent', cursor: 'pointer', color: T.text, fontFamily: 'inherit' }}>Hide</button>
+          <button onClick={() => setSelectedIds(new Set())} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 5, border: 'none', background: 'transparent', cursor: 'pointer', color: T.faint, fontFamily: 'inherit' }}>✕</button>
+        </div>
+      )}
     </div>
   );
 }
 
-interface DesktopTxRowProps { t: Transaction; i: number; currentCatId: string; year: number; T: ThemeTokens; dark: boolean; onRefreshTransactions: () => void; }
-function DesktopTxRow({ t, i, currentCatId, year, T, dark, onRefreshTransactions }: DesktopTxRowProps) {
+interface DesktopTxRowProps { t: Transaction; i: number; currentCatId: string; year: number; T: ThemeTokens; dark: boolean; isSelected: boolean; onRefreshTransactions: () => void; }
+function DesktopTxRow({ t, i, currentCatId, year, T, dark, isSelected, onRefreshTransactions }: DesktopTxRowProps) {
   const [catId, setCatId] = useState(currentCatId);
   const [hidden, setHidden] = useState(false);
-
-  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newCat = e.target.value;
-    setCatId(newCat);
-    await api.setOverride(t.id, newCat).catch(() => {});
-    onRefreshTransactions();
-  };
 
   const handleHide = async () => {
     setHidden(true);
@@ -254,7 +311,7 @@ function DesktopTxRow({ t, i, currentCatId, year, T, dark, onRefreshTransactions
   if (hidden) return null;
 
   return (
-    <div style={{ padding: '11px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
+    <div data-txid={t.id} style={{ padding: '11px 4px', margin: '0 -4px', borderTop: i ? `1px solid ${T.hair}` : 'none', borderRadius: 5, background: isSelected ? (dark ? '#4B9EFF20' : '#4B9EFF12') : 'transparent', transition: 'background 0.1s' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
@@ -265,15 +322,7 @@ function DesktopTxRow({ t, i, currentCatId, year, T, dark, onRefreshTransactions
           <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
         </div>
       </div>
-      <select value={catId} onChange={handleChange} style={{
-        marginTop: 5, fontSize: 11, color: T.muted,
-        background: dark ? '#ffffff10' : '#00000008',
-        border: `1px solid ${T.hair}`, borderRadius: 5,
-        padding: '2px 6px', cursor: 'pointer', fontFamily: 'inherit',
-        outline: 'none', width: '100%',
-      }}>
-        {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
+      <CatSelect value={catId} onChange={newCat => { setCatId(newCat); api.setOverride(t.id, newCat).catch(() => {}); onRefreshTransactions(); }} T={T} dark={dark} />
     </div>
   );
 }
