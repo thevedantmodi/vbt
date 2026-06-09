@@ -96,6 +96,12 @@ function categorize(tx) {
 }
 
 // _api/sync.ts
+var EXCLUDED_PFC = /* @__PURE__ */ new Set([
+  "TRANSFER_IN",
+  "TRANSFER_OUT",
+  "LOAN_PAYMENTS",
+  "BANK_FEES"
+]);
 async function handler(_req, res) {
   try {
     const allItems = await db.select().from(items);
@@ -107,7 +113,7 @@ async function handler(_req, res) {
         const data = response.data;
         if (data.added.length > 0) {
           await db.insert(transactions).values(
-            data.added.filter((t) => !t.pending).map((t) => ({
+            data.added.filter((t) => !t.pending && !EXCLUDED_PFC.has(t.personal_finance_category?.primary ?? "")).map((t) => ({
               id: t.transaction_id,
               itemId: item.itemId,
               name: t.merchant_name || t.name,

@@ -4,6 +4,13 @@ import { db, items, transactions } from './_db';
 import { plaidClient } from './_plaid';
 import { categorize } from './_categorize';
 
+const EXCLUDED_PFC = new Set([
+  'TRANSFER_IN',
+  'TRANSFER_OUT',
+  'LOAN_PAYMENTS',
+  'BANK_FEES',
+]);
+
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
     const allItems = await db.select().from(items);
@@ -18,7 +25,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
 
         if (data.added.length > 0) {
           await db.insert(transactions).values(
-            data.added.filter((t) => !t.pending).map((t) => ({
+            data.added.filter((t) => !t.pending && !EXCLUDED_PFC.has(t.personal_finance_category?.primary ?? '')).map((t) => ({
               id:         t.transaction_id,
               itemId:     item.itemId,
               name:       t.merchant_name || t.name,
