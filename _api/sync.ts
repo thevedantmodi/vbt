@@ -25,23 +25,23 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         const response = await plaidClient.transactionsSync({ access_token: item.accessToken, cursor });
         const data = response.data;
 
-        if (data.added.length > 0) {
-          await db.insert(transactions).values(
-            data.added.filter((t) => {
-              if (t.pending) return false;
-              if (EXCLUDED_PFC.has(t.personal_finance_category?.primary ?? '')) return false;
-              if (EXCLUDED_NAME.test(t.merchant_name || t.name)) return false;
-              return true;
-            }).map((t) => ({
-              id:         t.transaction_id,
-              itemId:     item.itemId,
-              name:       t.merchant_name || t.name,
-              amount:     String(t.amount),
-              date:       t.date,
-              categoryId: categorize(t),
-              pending:    false,
-            }))
-          ).onConflictDoUpdate({
+        const toInsert = data.added.filter((t) => {
+          if (t.pending) return false;
+          if (EXCLUDED_PFC.has(t.personal_finance_category?.primary ?? '')) return false;
+          if (EXCLUDED_NAME.test(t.merchant_name || t.name)) return false;
+          return true;
+        }).map((t) => ({
+          id:         t.transaction_id,
+          itemId:     item.itemId,
+          name:       t.merchant_name || t.name,
+          amount:     String(t.amount),
+          date:       t.date,
+          categoryId: categorize(t),
+          pending:    false,
+        }));
+
+        if (toInsert.length > 0) {
+          await db.insert(transactions).values(toInsert).onConflictDoUpdate({
             target: transactions.id,
             set: { name: transactions.name, amount: transactions.amount, date: transactions.date, categoryId: transactions.categoryId },
           });
