@@ -6,3 +6,4 @@ drizzle/
 *.js.map
 .vercel
 .env*
+.DS_Store

@@ -111,8 +111,9 @@ function TxRow({ t, i, year, T, dark, currentCatId, onRefreshTransactions }: TxR
           <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 12, flexShrink: 0 }}>
+          {t.mock && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: '#9B5DE5', background: '#9B5DE518', border: '1px solid #9B5DE540', borderRadius: 4, padding: '1px 5px' }}>MOCK</span>}
           <div style={{ fontSize: 14.5, ...NUM }}>{fmt(t.amount, true)}</div>
-          <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
+          {!t.mock && <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>}
         </div>
       </div>
       <CatSelect value={catId} onChange={newCat => { setCatId(newCat); api.setOverride(t.id, newCat).catch(() => {}); onRefreshTransactions(); }} T={T} dark={dark} fontSize={11.5} />
