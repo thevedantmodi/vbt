@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Ring from './Ring';
 import CatIcon from './CatIcon';
 import BudgetInput from './BudgetInput';
+import CatSelect from './CatSelect';
 import { NUM, ThemeTokens } from './theme';
 import { fmt, fmtSigned, ComputedCategory, CATEGORIES, Transaction } from '../lib/budget';
 import { api } from '../lib/api';
@@ -94,13 +95,6 @@ function TxRow({ t, i, year, T, dark, currentCatId, onRefreshTransactions }: TxR
   const [catId, setCatId] = useState(currentCatId);
   const [hidden, setHidden] = useState(false);
 
-  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newCat = e.target.value;
-    setCatId(newCat);
-    await api.setOverride(t.id, newCat).catch(() => {});
-    onRefreshTransactions();
-  };
-
   const handleHide = async () => {
     setHidden(true);
     await api.hideTransaction(t.id).catch(() => {});
@@ -121,21 +115,7 @@ function TxRow({ t, i, year, T, dark, currentCatId, onRefreshTransactions }: TxR
           <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
         </div>
       </div>
-      <select
-        value={catId}
-        onChange={handleChange}
-        style={{
-          marginTop: 6, fontSize: 11.5, color: T.muted,
-          background: dark ? '#ffffff10' : '#00000008',
-          border: `1px solid ${T.hair}`, borderRadius: 6,
-          padding: '3px 6px', cursor: 'pointer', fontFamily: 'inherit',
-          outline: 'none', width: '100%',
-        }}
-      >
-        {CATEGORIES.map((cat) => (
-          <option key={cat.id} value={cat.id}>{cat.name}</option>
-        ))}
-      </select>
+      <CatSelect value={catId} onChange={newCat => { setCatId(newCat); api.setOverride(t.id, newCat).catch(() => {}); onRefreshTransactions(); }} T={T} dark={dark} fontSize={11.5} />
     </div>
   );
 }

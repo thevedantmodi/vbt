@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import Ring from './Ring';
 import CatIcon from './CatIcon';
 import BudgetInput from './BudgetInput';
+import CatSelect from './CatSelect';
 import { tokens, NUM, ThemeTokens } from './theme';
 import { computeMonth, statusOf, fmt, fmtSigned, ComputedCategory, Transaction, CATEGORIES } from '../lib/budget';
 import { api } from '../lib/api';
@@ -287,11 +288,7 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefres
       {selectedIds.size > 0 && (
         <div style={{ borderTop: `1px solid ${T.hair}`, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, background: T.surface }}>
           <span style={{ fontSize: 12, color: T.muted, flex: 1 }}>{selectedIds.size} selected</span>
-          <select defaultValue="" onChange={e => { if (e.target.value) { recategorizeSelected(e.target.value); e.target.value = ''; } }}
-            style={{ fontSize: 11, border: `1px solid ${T.hair}`, borderRadius: 5, padding: '3px 6px', background: T.surface, color: T.text, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' }}>
-            <option value="" disabled>Move to…</option>
-            {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <CatSelect value="" placeholder="Move to…" onChange={id => recategorizeSelected(id)} T={T} dark={dark} marginTop={0} />
           <button onClick={hideSelected} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 5, border: `1px solid ${T.hair}`, background: 'transparent', cursor: 'pointer', color: T.text, fontFamily: 'inherit' }}>Hide</button>
           <button onClick={() => setSelectedIds(new Set())} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 5, border: 'none', background: 'transparent', cursor: 'pointer', color: T.faint, fontFamily: 'inherit' }}>✕</button>
         </div>
@@ -304,13 +301,6 @@ interface DesktopTxRowProps { t: Transaction; i: number; currentCatId: string; y
 function DesktopTxRow({ t, i, currentCatId, year, T, dark, isSelected, onRefreshTransactions }: DesktopTxRowProps) {
   const [catId, setCatId] = useState(currentCatId);
   const [hidden, setHidden] = useState(false);
-
-  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newCat = e.target.value;
-    setCatId(newCat);
-    await api.setOverride(t.id, newCat).catch(() => {});
-    onRefreshTransactions();
-  };
 
   const handleHide = async () => {
     setHidden(true);
@@ -332,15 +322,7 @@ function DesktopTxRow({ t, i, currentCatId, year, T, dark, isSelected, onRefresh
           <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
         </div>
       </div>
-      <select value={catId} onChange={handleChange} style={{
-        marginTop: 5, fontSize: 11, color: T.muted,
-        background: dark ? '#ffffff10' : '#00000008',
-        border: `1px solid ${T.hair}`, borderRadius: 5,
-        padding: '2px 6px', cursor: 'pointer', fontFamily: 'inherit',
-        outline: 'none', width: '100%',
-      }}>
-        {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
+      <CatSelect value={catId} onChange={newCat => { setCatId(newCat); api.setOverride(t.id, newCat).catch(() => {}); onRefreshTransactions(); }} T={T} dark={dark} />
     </div>
   );
 }

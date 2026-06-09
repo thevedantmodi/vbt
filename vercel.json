@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node build-api.mjs && vite build",
+  "buildCommand": "node build-api.mjs && npx drizzle-kit migrate && vite build",
   "outputDirectory": "dist",
   "framework": "vite"
 }
