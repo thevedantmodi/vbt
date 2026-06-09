@@ -1,5 +1,6 @@
 import Ring from './Ring';
 import CatIcon from './CatIcon';
+import BudgetInput from './BudgetInput';
 import { NUM, ThemeTokens } from './theme';
 import { fmt, fmtSigned, ComputedCategory } from '../lib/budget';
 
@@ -11,9 +12,10 @@ interface Props {
   year: number;
   isCurrent: boolean;
   onClose: () => void;
+  onSetBudget: (categoryId: string, planned: number) => void;
 }
 
-export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClose }: Props) {
+export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClose, onSetBudget }: Props) {
   const showing = !!cat;
   const c = cat;
   const txs = cat ? cat.txs : [];
@@ -38,7 +40,11 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 19, fontWeight: 680, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                <div style={{ fontSize: 13, color: T.muted, ...NUM }}>{fmt(c.spent)} of {fmt(c.planned)} · {Math.round(c.pct * 100)}%</div>
+                <div style={{ fontSize: 13, color: T.muted, ...NUM }}>
+                  {fmt(c.spent)} of{' '}
+                  <BudgetInput value={c.planned} T={T} fontSize={13} onSave={(v) => onSetBudget(c.id, v)} />
+                  {' '}· {Math.round(c.pct * 100)}%
+                </div>
               </div>
               <Ring size={52} stroke={6} value={c.pct} color={over ? '#DD6B5A' : c.color} track={T.track} rounded>
                 <span style={{ fontSize: 12, fontWeight: 700, ...NUM }}>{Math.round(c.pct * 100)}%</span>

@@ -12,6 +12,7 @@ await build({
     'plaid/create_link_token': '_api/plaid/create_link_token.ts',
     'plaid/exchange_public_token': '_api/plaid/exchange_public_token.ts',
     'unlink': '_api/unlink.ts',
+    'budgets': '_api/budgets.ts',
   },
   bundle: true,
   platform: 'node',

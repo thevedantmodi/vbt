@@ -29,4 +29,7 @@ export const api = {
   sync: () => post<{ ok: boolean }>("/api/sync"),
   status: () => get<{ linked: boolean; env: string }>("/api/status"),
   unlink: () => post<{ ok: boolean }>("/api/unlink"),
+  getBudgets: () => get<{ budgets: Record<string, number> }>("/api/budgets"),
+  setBudget: (categoryId: string, planned: number) =>
+    post<{ ok: boolean }>("/api/budgets", { categoryId, planned }),
 };

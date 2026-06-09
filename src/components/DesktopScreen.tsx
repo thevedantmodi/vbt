@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Ring from './Ring';
 import CatIcon from './CatIcon';
+import BudgetInput from './BudgetInput';
 import { tokens, NUM, ThemeTokens } from './theme';
 import { computeMonth, statusOf, fmt, fmtSigned, ComputedCategory, Transaction } from '../lib/budget';
 
@@ -11,9 +12,10 @@ interface Props {
   dark?: boolean;
   accent?: string;
   budgets?: Record<string, number>;
+  onSetBudget?: (categoryId: string, planned: number) => void;
 }
 
-export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {} }: Props) {
+export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export default function DesktopScreen({ transactions = [], dark = false, accent 
 
           {/* transaction panel */}
           {selectedCat && (
-            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} />
+            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} />
           )}
         </div>
       </div>
@@ -165,9 +167,10 @@ interface TxPanelProps {
   year: number;
   isCurrent: boolean;
   onClose: () => void;
+  onSetBudget: (categoryId: string, planned: number) => void;
 }
 
-function TxPanel({ cat, T, dark, year, isCurrent, onClose }: TxPanelProps) {
+function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget }: TxPanelProps) {
   const over = cat.diff > 0 && !cat.fixed;
   return (
     <div style={{ borderLeft: `1px solid ${T.hair}`, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)', position: 'sticky', top: 0 }}>
@@ -182,7 +185,11 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose }: TxPanelProps) {
           </div>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 99, border: `1px solid ${T.hair}`, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.muted, fontSize: 16 }}>×</button>
         </div>
-        <div style={{ fontSize: 13, color: T.muted, ...NUM }}>{fmt(cat.spent)} of {fmt(cat.planned)} · {Math.round(cat.pct * 100)}%</div>
+        <div style={{ fontSize: 13, color: T.muted, ...NUM }}>
+          {fmt(cat.spent)} of{' '}
+          <BudgetInput value={cat.planned} T={T} fontSize={13} onSave={(v) => onSetBudget(cat.id, v)} />
+          {' '}· {Math.round(cat.pct * 100)}%
+        </div>
         {isCurrent && (
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <MiniStat label={cat.fixed ? 'Recurring' : 'Projected'} value={fmt(cat.projected)} T={T} />
