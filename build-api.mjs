@@ -2,6 +2,7 @@ import { build } from 'esbuild';
 import { mkdirSync } from 'fs';
 
 mkdirSync('api/plaid', { recursive: true });
+mkdirSync('api/auth', { recursive: true });
 
 await build({
   entryPoints: {
@@ -15,6 +16,7 @@ await build({
     'budgets': '_api/budgets.ts',
     'override': '_api/override.ts',
     'hide': '_api/hide.ts',
+    'auth/verify': '_api/auth/verify.ts',
   },
   bundle: true,
   platform: 'node',
