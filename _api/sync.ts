@@ -66,9 +66,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     }
 
     res.json({ ok: true });
-  } catch (err: any) {
-    const detail = { message: err?.message, code: err?.code, detail: err?.detail, hint: err?.hint, cause: String(err?.cause) };
-    console.error('sync error:', JSON.stringify(detail));
-    res.status(500).json({ error: detail });
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
   }
 }

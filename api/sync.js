@@ -151,9 +151,7 @@ async function handler(_req, res) {
       await db.update(items).set({ cursor: cursor ?? null }).where((0, import_drizzle_orm.eq)(items.itemId, item.itemId));
     }
     res.json({ ok: true });
-  } catch (err) {
-    const detail = { message: err?.message, code: err?.code, detail: err?.detail, hint: err?.hint, cause: String(err?.cause) };
-    console.error("sync error:", JSON.stringify(detail));
-    res.status(500).json({ error: detail });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 }

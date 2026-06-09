@@ -15,7 +15,6 @@ await build({
     'budgets': '_api/budgets.ts',
     'override': '_api/override.ts',
     'hide': '_api/hide.ts',
-    'run-migration': '_api/run-migration.ts',
   },
   bundle: true,
   platform: 'node',
