@@ -15,7 +15,6 @@ await build({
     'budgets': '_api/budgets.ts',
     'override': '_api/override.ts',
     'hide': '_api/hide.ts',
-    'dbcheck': '_api/dbcheck.ts',
   },
   bundle: true,
   platform: 'node',
