@@ -14,6 +14,7 @@ await build({
     'unlink': '_api/unlink.ts',
     'budgets': '_api/budgets.ts',
     'override': '_api/override.ts',
+    'hide': '_api/hide.ts',
   },
   bundle: true,
   platform: 'node',

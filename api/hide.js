@@ -17,12 +17,13 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// _api/accounts.ts
-var accounts_exports = {};
-__export(accounts_exports, {
+// _api/hide.ts
+var hide_exports = {};
+__export(hide_exports, {
   default: () => handler
 });
-module.exports = __toCommonJS(accounts_exports);
+module.exports = __toCommonJS(hide_exports);
+var import_drizzle_orm = require("drizzle-orm");
 
 // _api/_db.ts
 var import_serverless = require("@neondatabase/serverless");
@@ -55,34 +56,17 @@ var budgets = (0, import_pg_core.pgTable)("budgets", {
 var sql = (0, import_serverless.neon)(process.env.DATABASE_URL);
 var db = (0, import_neon_http.drizzle)(sql, { schema: { items, transactions, categoryOverrides, budgets } });
 
-// _api/_plaid.ts
-var import_plaid = require("plaid");
-var configuration = new import_plaid.Configuration({
-  basePath: import_plaid.PlaidEnvironments[process.env.PLAID_ENV || "sandbox"],
-  baseOptions: {
-    headers: {
-      "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
-      "PLAID-SECRET": process.env.PLAID_SECRET,
-      "Plaid-Version": "2020-09-14"
-    }
-  }
-});
-var plaidClient = new import_plaid.PlaidApi(configuration);
-var COUNTRY_CODES = (process.env.PLAID_COUNTRY_CODES || "US").split(",");
-var PRODUCTS = (process.env.PLAID_PRODUCTS || "transactions").split(",");
-
-// _api/accounts.ts
-async function handler(_req, res) {
+// _api/hide.ts
+async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   try {
-    const allItems = await db.select().from(items);
-    if (allItems.length === 0) return res.status(404).json({ error: "No linked accounts" });
-    const results = await Promise.all(
-      allItems.map(
-        (item) => plaidClient.accountsBalanceGet({ access_token: item.accessToken }).then((r) => r.data.accounts)
-      )
-    );
-    res.json({ accounts: results.flat() });
-  } catch (err) {
+    const { transactionId } = req.body;
+    if (!transactionId || typeof transactionId !== "string") {
+      return res.status(400).json({ error: "Invalid transactionId" });
+    }
+    await db.update(transactions).set({ hidden: true }).where((0, import_drizzle_orm.eq)(transactions.id, transactionId));
+    res.json({ ok: true });
+  } catch {
     res.status(500).json({ error: "Internal server error" });
   }
 }

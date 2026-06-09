@@ -14,7 +14,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         override:   categoryOverrides.categoryId,
       })
       .from(transactions)
-      .leftJoin(categoryOverrides, eq(transactions.id, categoryOverrides.transactionId));
+      .leftJoin(categoryOverrides, eq(transactions.id, categoryOverrides.transactionId))
+      .where(eq(transactions.hidden, false));
 
     res.json({
       transactions: rows.map((r) => ({

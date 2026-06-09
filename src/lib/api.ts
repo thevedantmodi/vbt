@@ -34,4 +34,6 @@ export const api = {
     post<{ ok: boolean }>("/api/budgets", { categoryId, planned }),
   setOverride: (transactionId: string, categoryId: string) =>
     post<{ ok: boolean }>("/api/override", { transactionId, categoryId }),
+  hideTransaction: (transactionId: string) =>
+    post<{ ok: boolean }>("/api/hide", { transactionId }),
 };

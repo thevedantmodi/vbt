@@ -42,7 +42,8 @@ var transactions = (0, import_pg_core.pgTable)("transactions", {
   amount: (0, import_pg_core.numeric)("amount").notNull(),
   date: (0, import_pg_core.text)("date").notNull(),
   categoryId: (0, import_pg_core.text)("category_id").notNull(),
-  pending: (0, import_pg_core.boolean)("pending").default(false)
+  pending: (0, import_pg_core.boolean)("pending").default(false),
+  hidden: (0, import_pg_core.boolean)("hidden").default(false)
 });
 var categoryOverrides = (0, import_pg_core.pgTable)("category_overrides", {
   transactionId: (0, import_pg_core.text)("transaction_id").primaryKey().references(() => transactions.id, { onDelete: "cascade" }),
@@ -65,7 +66,7 @@ async function handler(_req, res) {
       date: transactions.date,
       categoryId: transactions.categoryId,
       override: categoryOverrides.categoryId
-    }).from(transactions).leftJoin(categoryOverrides, (0, import_drizzle_orm.eq)(transactions.id, categoryOverrides.transactionId));
+    }).from(transactions).leftJoin(categoryOverrides, (0, import_drizzle_orm.eq)(transactions.id, categoryOverrides.transactionId)).where((0, import_drizzle_orm.eq)(transactions.hidden, false));
     res.json({
       transactions: rows.map((r) => ({
         id: r.id,

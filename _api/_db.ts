@@ -17,6 +17,7 @@ export const transactions = pgTable('transactions', {
   date:       text('date').notNull(),
   categoryId: text('category_id').notNull(),
   pending:    boolean('pending').default(false),
+  hidden:     boolean('hidden').default(false),
 });
 
 export const categoryOverrides = pgTable('category_overrides', {

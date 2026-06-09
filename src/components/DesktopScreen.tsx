@@ -236,6 +236,7 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefres
 interface DesktopTxRowProps { t: Transaction; i: number; currentCatId: string; year: number; T: ThemeTokens; dark: boolean; onRefreshTransactions: () => void; }
 function DesktopTxRow({ t, i, currentCatId, year, T, dark, onRefreshTransactions }: DesktopTxRowProps) {
   const [catId, setCatId] = useState(currentCatId);
+  const [hidden, setHidden] = useState(false);
 
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCat = e.target.value;
@@ -244,6 +245,14 @@ function DesktopTxRow({ t, i, currentCatId, year, T, dark, onRefreshTransactions
     onRefreshTransactions();
   };
 
+  const handleHide = async () => {
+    setHidden(true);
+    await api.hideTransaction(t.id).catch(() => {});
+    onRefreshTransactions();
+  };
+
+  if (hidden) return null;
+
   return (
     <div style={{ padding: '11px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -251,7 +260,10 @@ function DesktopTxRow({ t, i, currentCatId, year, T, dark, onRefreshTransactions
           <div style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
           <div style={{ fontSize: 11.5, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
         </div>
-        <div style={{ fontSize: 13.5, marginLeft: 12, flexShrink: 0, ...NUM }}>{fmt(t.amount, true)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 12, flexShrink: 0 }}>
+          <div style={{ fontSize: 13.5, ...NUM }}>{fmt(t.amount, true)}</div>
+          <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
+        </div>
       </div>
       <select value={catId} onChange={handleChange} style={{
         marginTop: 5, fontSize: 11, color: T.muted,

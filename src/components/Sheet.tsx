@@ -92,6 +92,7 @@ interface TxRowProps {
 
 function TxRow({ t, i, year, T, dark, currentCatId, onRefreshTransactions }: TxRowProps) {
   const [catId, setCatId] = useState(currentCatId);
+  const [hidden, setHidden] = useState(false);
 
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCat = e.target.value;
@@ -100,6 +101,14 @@ function TxRow({ t, i, year, T, dark, currentCatId, onRefreshTransactions }: TxR
     onRefreshTransactions();
   };
 
+  const handleHide = async () => {
+    setHidden(true);
+    await api.hideTransaction(t.id).catch(() => {});
+    onRefreshTransactions();
+  };
+
+  if (hidden) return null;
+
   return (
     <div style={{ padding: '12px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -107,7 +116,10 @@ function TxRow({ t, i, year, T, dark, currentCatId, onRefreshTransactions }: TxR
           <div style={{ fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
           <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
         </div>
-        <div style={{ fontSize: 14.5, marginLeft: 12, flexShrink: 0, ...NUM }}>{fmt(t.amount, true)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 12, flexShrink: 0 }}>
+          <div style={{ fontSize: 14.5, ...NUM }}>{fmt(t.amount, true)}</div>
+          <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
+        </div>
       </div>
       <select
         value={catId}
