@@ -152,8 +152,8 @@ async function handler(_req, res) {
     }
     res.json({ ok: true });
   } catch (err) {
-    const msg = err?.message || String(err);
-    console.error("sync error:", msg);
-    res.status(500).json({ error: msg });
+    const detail = { message: err?.message, code: err?.code, detail: err?.detail, hint: err?.hint, cause: String(err?.cause) };
+    console.error("sync error:", JSON.stringify(detail));
+    res.status(500).json({ error: detail });
   }
 }
