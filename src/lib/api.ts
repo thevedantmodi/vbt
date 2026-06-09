@@ -32,4 +32,6 @@ export const api = {
   getBudgets: () => get<{ budgets: Record<string, number> }>("/api/budgets"),
   setBudget: (categoryId: string, planned: number) =>
     post<{ ok: boolean }>("/api/budgets", { categoryId, planned }),
+  setOverride: (transactionId: string, categoryId: string) =>
+    post<{ ok: boolean }>("/api/override", { transactionId, categoryId }),
 };

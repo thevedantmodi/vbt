@@ -2,7 +2,8 @@ import Ring from './Ring';
 import CatIcon from './CatIcon';
 import BudgetInput from './BudgetInput';
 import { NUM, ThemeTokens } from './theme';
-import { fmt, fmtSigned, ComputedCategory } from '../lib/budget';
+import { fmt, fmtSigned, ComputedCategory, CATEGORIES, Transaction } from '../lib/budget';
+import { api } from '../lib/api';
 
 interface Props {
   cat: ComputedCategory | null;
@@ -13,9 +14,10 @@ interface Props {
   isCurrent: boolean;
   onClose: () => void;
   onSetBudget: (categoryId: string, planned: number) => void;
+  onRecategorize: (txId: string, categoryId: string) => void;
 }
 
-export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClose, onSetBudget }: Props) {
+export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClose, onSetBudget, onRecategorize }: Props) {
   const showing = !!cat;
   const c = cat;
   const txs = cat ? cat.txs : [];
@@ -45,9 +47,6 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
                   <BudgetInput value={c.planned} T={T} fontSize={13} onSave={(v) => onSetBudget(c.id, v)} />
                   {' '}· {Math.round(c.pct * 100)}%
                 </div>
-                <div style={{ fontSize: 11, color: T.faint, marginTop: 3 }}>
-                  ✎ Tap the budget amount to edit
-                </div>
               </div>
               <Ring size={52} stroke={6} value={c.pct} color={over ? '#DD6B5A' : c.color} track={T.track} rounded>
                 <span style={{ fontSize: 12, fontWeight: 700, ...NUM }}>{Math.round(c.pct * 100)}%</span>
@@ -70,13 +69,7 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
                 <div style={{ fontSize: 14, color: T.faint, padding: '18px 0' }}>No transactions this month.</div>
               )}
               {txs.map((t, i) => (
-                <div key={t.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
-                    <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
-                  </div>
-                  <div style={{ fontSize: 14.5, marginLeft: 12, ...NUM }}>{fmt(t.amount, true)}</div>
-                </div>
+                <TxRow key={t.id || i} t={t} i={i} year={year} T={T} dark={dark} currentCatId={c.id} onRecategorize={onRecategorize} />
               ))}
             </div>
           </>
@@ -86,13 +79,52 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
   );
 }
 
-interface MiniProps {
-  label: string;
-  value: string;
-  color?: string;
+interface TxRowProps {
+  t: Transaction;
+  i: number;
+  year: number;
   T: ThemeTokens;
+  dark: boolean;
+  currentCatId: string;
+  onRecategorize: (txId: string, categoryId: string) => void;
 }
 
+function TxRow({ t, i, year, T, dark, currentCatId, onRecategorize }: TxRowProps) {
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCat = e.target.value;
+    await api.setOverride(t.id, newCat).catch(() => {});
+    onRecategorize(t.id, newCat);
+  };
+
+  return (
+    <div style={{ padding: '12px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
+        </div>
+        <div style={{ fontSize: 14.5, marginLeft: 12, flexShrink: 0, ...NUM }}>{fmt(t.amount, true)}</div>
+      </div>
+      <select
+        value={currentCatId}
+        onChange={handleChange}
+        style={{
+          marginTop: 6, fontSize: 11.5, color: T.muted,
+          background: dark ? '#ffffff10' : '#00000008',
+          border: `1px solid ${T.hair}`, borderRadius: 6,
+          padding: '3px 6px', cursor: 'pointer', fontFamily: 'inherit',
+          outline: 'none', width: '100%',
+        }}
+      >
+        {CATEGORIES.map((cat) => (
+          <option key={cat.id} value={cat.id}>{cat.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+interface MiniProps { label: string; value: string; color?: string; T: ThemeTokens; }
 function Mini({ label, value, color, T }: MiniProps) {
   return (
     <div style={{ flex: 1, background: T.surface2, border: `1px solid ${T.hair}`, borderRadius: 13, padding: '10px 11px' }}>

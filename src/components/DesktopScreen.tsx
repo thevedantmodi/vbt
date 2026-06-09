@@ -3,7 +3,8 @@ import Ring from './Ring';
 import CatIcon from './CatIcon';
 import BudgetInput from './BudgetInput';
 import { tokens, NUM, ThemeTokens } from './theme';
-import { computeMonth, statusOf, fmt, fmtSigned, ComputedCategory, Transaction } from '../lib/budget';
+import { computeMonth, statusOf, fmt, fmtSigned, ComputedCategory, Transaction, CATEGORIES } from '../lib/budget';
+import { api } from '../lib/api';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -13,6 +14,7 @@ interface Props {
   accent?: string;
   budgets?: Record<string, number>;
   onSetBudget?: (categoryId: string, planned: number) => void;
+  onRecategorize?: (txId: string, categoryId: string) => void;
   onToggleDark?: () => void;
   linked?: boolean;
   serverUp?: boolean;
@@ -23,7 +25,7 @@ interface Props {
   onUnlink?: () => void;
 }
 
-export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
+export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onRecategorize, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -133,7 +135,7 @@ export default function DesktopScreen({ transactions = [], dark = false, accent 
 
           {/* transaction panel */}
           {selectedCat && (
-            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} />
+            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} onRecategorize={onRecategorize ?? (() => {})} />
           )}
         </div>
       </div>
@@ -185,9 +187,10 @@ interface TxPanelProps {
   isCurrent: boolean;
   onClose: () => void;
   onSetBudget: (categoryId: string, planned: number) => void;
+  onRecategorize: (txId: string, categoryId: string) => void;
 }
 
-function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget }: TxPanelProps) {
+function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRecategorize }: TxPanelProps) {
   const over = cat.diff > 0 && !cat.fixed;
   return (
     <div style={{ borderLeft: `1px solid ${T.hair}`, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)', position: 'sticky', top: 0 }}>
@@ -223,12 +226,32 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget }: TxPane
           <div style={{ fontSize: 14, color: T.faint, padding: '16px 0' }}>No transactions this month.</div>
         )}
         {cat.txs.map((t, i) => (
-          <div key={t.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
-              <div style={{ fontSize: 11.5, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
+          <div key={t.id || i} style={{ padding: '11px 0', borderTop: i ? `1px solid ${T.hair}` : 'none' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+                <div style={{ fontSize: 11.5, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
+              </div>
+              <div style={{ fontSize: 13.5, marginLeft: 12, flexShrink: 0, ...NUM }}>{fmt(t.amount, true)}</div>
             </div>
-            <div style={{ fontSize: 13.5, marginLeft: 12, flexShrink: 0, ...NUM }}>{fmt(t.amount, true)}</div>
+            <select
+              value={cat.id}
+              onChange={async (e) => {
+                await api.setOverride(t.id, e.target.value).catch(() => {});
+                onRecategorize(t.id, e.target.value);
+              }}
+              style={{
+                marginTop: 5, fontSize: 11, color: T.muted,
+                background: dark ? '#ffffff10' : '#00000008',
+                border: `1px solid ${T.hair}`, borderRadius: 5,
+                padding: '2px 6px', cursor: 'pointer', fontFamily: 'inherit',
+                outline: 'none', width: '100%',
+              }}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
         ))}
       </div>

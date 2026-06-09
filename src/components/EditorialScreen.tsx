@@ -13,6 +13,7 @@ interface Props {
   accent?: string;
   budgets?: Record<string, number>;
   onSetBudget?: (categoryId: string, planned: number) => void;
+  onRecategorize?: (txId: string, categoryId: string) => void;
   onToggleDark?: () => void;
   linked?: boolean;
   serverUp?: boolean;
@@ -23,7 +24,7 @@ interface Props {
   onUnlink?: () => void;
 }
 
-export default function EditorialScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
+export default function EditorialScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onRecategorize, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -112,7 +113,7 @@ export default function EditorialScreen({ transactions = [], dark = false, accen
         </div>
       </div>
 
-      <Sheet cat={oc} T={T} dark={dark} monthLabel={MONTH_NAMES[d.month]} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} />
+      <Sheet cat={oc} T={T} dark={dark} monthLabel={MONTH_NAMES[d.month]} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} onRecategorize={onRecategorize ?? (() => {})} />
     </div>
   );
 }
