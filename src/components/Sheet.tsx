@@ -45,6 +45,9 @@ export default function Sheet({ cat, T, dark, monthLabel, year, isCurrent, onClo
                   <BudgetInput value={c.planned} T={T} fontSize={13} onSave={(v) => onSetBudget(c.id, v)} />
                   {' '}· {Math.round(c.pct * 100)}%
                 </div>
+                <div style={{ fontSize: 11, color: T.faint, marginTop: 3 }}>
+                  ✎ Tap the budget amount to edit
+                </div>
               </div>
               <Ring size={52} stroke={6} value={c.pct} color={over ? '#DD6B5A' : c.color} track={T.track} rounded>
                 <span style={{ fontSize: 12, fontWeight: 700, ...NUM }}>{Math.round(c.pct * 100)}%</span>

@@ -117,6 +117,7 @@ function CatCard({ c, T, dark, onClick }: CatCardProps) {
       <div>
         <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
         <div style={{ fontSize: 13, color: T.muted, marginTop: 2, ...NUM }}>{fmt(c.spent)} <span style={{ color: T.faint }}>/ {fmt(c.planned)}</span></div>
+        <div style={{ fontSize: 11, color: T.faint, marginTop: 4 }}>Tap to edit budget</div>
       </div>
     </button>
   );

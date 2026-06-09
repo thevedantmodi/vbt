@@ -190,6 +190,7 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget }: TxPane
           <BudgetInput value={cat.planned} T={T} fontSize={13} onSave={(v) => onSetBudget(cat.id, v)} />
           {' '}· {Math.round(cat.pct * 100)}%
         </div>
+        <div style={{ fontSize: 11, color: T.faint, marginTop: 3 }}>✎ Click the budget amount to edit</div>
         {isCurrent && (
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <MiniStat label={cat.fixed ? 'Recurring' : 'Projected'} value={fmt(cat.projected)} T={T} />
