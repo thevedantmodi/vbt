@@ -15,6 +15,7 @@ export default function App() {
   const [desktop, setDesktop] = useState(() => window.innerWidth >= 768);
   const [linked, setLinked] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>(SAMPLE_TRANSACTIONS);
+  const [mockTransactions, setMockTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Record<string, number>>({});
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -97,17 +98,24 @@ const startLink = async () => {
     if (linkToken && ready) open();
   }, [linkToken, ready, open]);
 
+  const addMockTransaction = useCallback((t: Transaction) => {
+    setMockTransactions((prev) => [...prev, t]);
+  }, []);
+
+  const allTransactions = [...transactions, ...mockTransactions];
+
   const bankProps = { linked, serverUp, loading, demo, onLink: startLink, onSync: refresh, onUnlink: unlink };
 
   if (desktop) {
     return (
       <DesktopScreen
-        transactions={transactions}
+        transactions={allTransactions}
         dark={dark}
         accent={ACCENT}
         budgets={budgets}
         onSetBudget={handleSetBudget}
         onRefreshTransactions={refreshTransactions}
+        onAddMockTransaction={addMockTransaction}
         onToggleDark={() => setDark((v) => !v)}
         {...bankProps}
       />
@@ -135,7 +143,7 @@ const startLink = async () => {
         background: dark ? "#0E0F11" : "#F4F2EC",
       }}>
         <EditorialScreen
-          transactions={transactions}
+          transactions={allTransactions}
           dark={dark}
           accent={ACCENT}
           budgets={budgets}

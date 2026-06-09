@@ -14,6 +14,7 @@ export interface Transaction {
   amount: number;
   date: string;
   categoryId: string;
+  mock?: boolean;
 }
 
 export interface ComputedCategory extends Category {

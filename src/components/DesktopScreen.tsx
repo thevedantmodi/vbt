@@ -16,6 +16,7 @@ interface Props {
   budgets?: Record<string, number>;
   onSetBudget?: (categoryId: string, planned: number) => void;
   onRefreshTransactions?: () => void;
+  onAddMockTransaction?: (t: Transaction) => void;
   onToggleDark?: () => void;
   linked?: boolean;
   serverUp?: boolean;
@@ -26,7 +27,7 @@ interface Props {
   onUnlink?: () => void;
 }
 
-export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onRefreshTransactions, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
+export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onRefreshTransactions, onAddMockTransaction, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -136,7 +137,7 @@ export default function DesktopScreen({ transactions = [], dark = false, accent 
 
           {/* transaction panel */}
           {selectedCat && (
-            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} onRefreshTransactions={onRefreshTransactions ?? (() => {})} />
+            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} onRefreshTransactions={onRefreshTransactions ?? (() => {})} onAddMock={onAddMockTransaction ?? (() => {})} />
           )}
         </div>
       </div>
@@ -181,6 +182,7 @@ function CatCard({ c, T, dark, selected, onClick }: CatCardProps) {
 }
 
 interface TxPanelProps {
+  onAddMock: (t: Transaction) => void;
   cat: ComputedCategory;
   T: ThemeTokens;
   dark: boolean;
@@ -191,9 +193,11 @@ interface TxPanelProps {
   onRefreshTransactions: () => void;
 }
 
-function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefreshTransactions }: TxPanelProps) {
+function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefreshTransactions, onAddMock }: TxPanelProps) {
   const over = cat.diff > 0 && !cat.fixed;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mockName, setMockName] = useState('');
+  const [mockAmount, setMockAmount] = useState('');
   const [dragRect, setDragRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const dragOrigin = useRef<{ x: number; y: number } | null>(null);
@@ -284,6 +288,32 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefres
         ))}
       </div>
 
+      {/* mock transaction form */}
+      <div style={{ borderTop: `1px solid ${T.hair}`, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input
+          placeholder="Mock transaction name"
+          value={mockName}
+          onChange={e => setMockName(e.target.value)}
+          style={{ flex: 1, fontSize: 12, padding: '4px 8px', borderRadius: 5, border: `1px solid ${T.hair}`, background: T.surface, color: T.text, fontFamily: 'inherit', outline: 'none' }}
+        />
+        <input
+          placeholder="$0.00"
+          value={mockAmount}
+          onChange={e => setMockAmount(e.target.value)}
+          style={{ width: 72, fontSize: 12, padding: '4px 8px', borderRadius: 5, border: `1px solid ${T.hair}`, background: T.surface, color: T.text, fontFamily: 'inherit', outline: 'none' }}
+        />
+        <button
+          onClick={() => {
+            const amt = parseFloat(mockAmount);
+            if (!mockName.trim() || isNaN(amt) || amt <= 0) return;
+            onAddMock({ id: `mock-${Date.now()}`, name: mockName.trim(), amount: amt, date: new Date().toISOString().slice(0, 10), categoryId: cat.id, mock: true });
+            setMockName('');
+            setMockAmount('');
+          }}
+          style={{ fontSize: 11, padding: '4px 10px', borderRadius: 5, border: `1px solid ${T.hair}`, background: 'transparent', cursor: 'pointer', color: T.text, fontFamily: 'inherit' }}
+        >+ Mock</button>
+      </div>
+
       {/* bulk action bar */}
       {selectedIds.size > 0 && (
         <div style={{ borderTop: `1px solid ${T.hair}`, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, background: T.surface }}>
@@ -318,8 +348,9 @@ function DesktopTxRow({ t, i, currentCatId, year, T, dark, isSelected, onRefresh
           <div style={{ fontSize: 11.5, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 12, flexShrink: 0 }}>
+          {t.mock && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: '#9B5DE5', background: '#9B5DE518', border: '1px solid #9B5DE540', borderRadius: 4, padding: '1px 5px' }}>MOCK</span>}
           <div style={{ fontSize: 13.5, ...NUM }}>{fmt(t.amount, true)}</div>
-          <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
+          {!t.mock && <button onClick={handleHide} title="Hide transaction" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.faint, fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>}
         </div>
       </div>
       <CatSelect value={catId} onChange={newCat => { setCatId(newCat); api.setOverride(t.id, newCat).catch(() => {}); onRefreshTransactions(); }} T={T} dark={dark} />
