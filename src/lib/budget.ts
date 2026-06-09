@@ -50,9 +50,10 @@ export const CATEGORIES: Category[] = [
   { id: 'personal',  name: 'Personal Care',  planned: 200,  fixed: false, color: '#D2A24C', pfc: ['PERSONAL_CARE', 'GENERAL_MERCHANDISE'], match: ['pharmacy', 'walgreens', 'cvs', 'sephora', 'aesop', 'uniqlo', 'salon'] },
   { id: 'fitness',   name: 'Fitness',        planned: 60,   fixed: true,  color: '#D2674E', pfc: ['GENERAL_SERVICES_GYMS_AND_FITNESS_CENTERS'], match: ['gym', 'fitness', 'crunch', 'classpass', 'yoga', 'pilates'] },
   { id: 'travel',    name: 'Travel',         planned: 300,  fixed: false, color: '#4E8FD6', pfc: ['TRAVEL'], match: ['airline', 'airbnb', 'hotel', 'flight', 'united', 'delta', 'expedia'] },
+  { id: 'other',     name: 'Uncategorized',  planned: 0,    fixed: false, color: '#9098A8' },
 ];
 
-export const UNCATEGORIZED: Category = { id: 'other', name: 'Uncategorized', planned: 0, fixed: false, color: '#9098A8' };
+export const UNCATEGORIZED: Category = CATEGORIES[CATEGORIES.length - 1];
 
 export function categorize(tx: { personal_finance_category?: { primary?: string }; pfcPrimary?: string; merchant_name?: string; name?: string }): string {
   const pfc = tx.personal_finance_category?.primary || tx.pfcPrimary;
