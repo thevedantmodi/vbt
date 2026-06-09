@@ -13,9 +13,17 @@ interface Props {
   accent?: string;
   budgets?: Record<string, number>;
   onSetBudget?: (categoryId: string, planned: number) => void;
+  onToggleDark?: () => void;
+  linked?: boolean;
+  serverUp?: boolean;
+  loading?: boolean;
+  demo?: boolean;
+  onLink?: () => void;
+  onSync?: () => void;
+  onUnlink?: () => void;
 }
 
-export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget }: Props) {
+export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -45,6 +53,15 @@ export default function DesktopScreen({ transactions = [], dark = false, accent 
             {MONTH_NAMES[d.month]} {d.year}
           </span>
           <Chev dir="r" disabled={atFuture} onClick={() => step(1)} T={T} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {demo && <span style={{ fontSize: 12, color: T.faint, border: `1px solid ${T.hair}`, borderRadius: 99, padding: '4px 10px' }}>sample data</span>}
+          {!linked && <TopBtn onClick={onLink!} disabled={!serverUp} T={T}>{serverUp ? '+ Connect bank' : 'Server offline'}</TopBtn>}
+          {linked && <TopBtn onClick={onSync!} T={T}>{loading ? 'Syncing…' : '↻ Sync'}</TopBtn>}
+          {linked && <TopBtn onClick={onUnlink!} T={T} danger>Disconnect</TopBtn>}
+          <button onClick={onToggleDark} style={{ width: 32, height: 32, borderRadius: 99, border: `1px solid ${T.hair}`, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: T.muted }}>
+            {dark ? '☀︎' : '☾'}
+          </button>
         </div>
       </div>
 
@@ -250,6 +267,21 @@ function Chev({ dir, onClick, disabled, T }: ChevProps) {
       <svg width="8" height="13" viewBox="0 0 9 14" fill="none" style={{ transform: dir === 'r' ? 'none' : 'scaleX(-1)' }}>
         <path d="M1.5 1L7 7l-5.5 6" stroke={T.text} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
+    </button>
+  );
+}
+
+interface TopBtnProps { children: React.ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean; T: ThemeTokens; }
+function TopBtn({ children, onClick, disabled, danger, T }: TopBtnProps) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      fontSize: 12.5, padding: '5px 12px', borderRadius: 99,
+      border: `1px solid ${danger ? '#DD6B5A44' : T.hair}`,
+      background: 'transparent', color: danger ? '#DD6B5A' : T.text,
+      cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.4 : 1,
+      fontFamily: 'inherit', whiteSpace: 'nowrap',
+    }}>
+      {children}
     </button>
   );
 }
