@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "vite",
     "dev:full": "vercel dev",
-    "build": "vite build",
+    "build": "node build-api.mjs && vite build",
+    "build:api": "node build-api.mjs",
     "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -27,6 +28,7 @@
     "@vercel/node": "^2.3.0",
     "@vitejs/plugin-react": "^6.0.1",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.28.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.8.3",
     "vercel": "^54.10.1",
