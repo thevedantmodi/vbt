@@ -102,6 +102,7 @@ var EXCLUDED_PFC = /* @__PURE__ */ new Set([
   "LOAN_PAYMENTS",
   "BANK_FEES"
 ]);
+var EXCLUDED_NAME = /payment|thank you|autopay|online pmt|web pmt/i;
 async function handler(_req, res) {
   try {
     const allItems = await db.select().from(items);
@@ -113,7 +114,12 @@ async function handler(_req, res) {
         const data = response.data;
         if (data.added.length > 0) {
           await db.insert(transactions).values(
-            data.added.filter((t) => !t.pending && !EXCLUDED_PFC.has(t.personal_finance_category?.primary ?? "")).map((t) => ({
+            data.added.filter((t) => {
+              if (t.pending) return false;
+              if (EXCLUDED_PFC.has(t.personal_finance_category?.primary ?? "")) return false;
+              if (EXCLUDED_NAME.test(t.merchant_name || t.name)) return false;
+              return true;
+            }).map((t) => ({
               id: t.transaction_id,
               itemId: item.itemId,
               name: t.merchant_name || t.name,

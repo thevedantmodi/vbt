@@ -11,6 +11,8 @@ const EXCLUDED_PFC = new Set([
   'BANK_FEES',
 ]);
 
+const EXCLUDED_NAME = /payment|thank you|autopay|online pmt|web pmt/i;
+
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
     const allItems = await db.select().from(items);
@@ -25,7 +27,12 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
 
         if (data.added.length > 0) {
           await db.insert(transactions).values(
-            data.added.filter((t) => !t.pending && !EXCLUDED_PFC.has(t.personal_finance_category?.primary ?? '')).map((t) => ({
+            data.added.filter((t) => {
+              if (t.pending) return false;
+              if (EXCLUDED_PFC.has(t.personal_finance_category?.primary ?? '')) return false;
+              if (EXCLUDED_NAME.test(t.merchant_name || t.name)) return false;
+              return true;
+            }).map((t) => ({
               id:         t.transaction_id,
               itemId:     item.itemId,
               name:       t.merchant_name || t.name,
