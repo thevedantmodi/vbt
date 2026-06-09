@@ -56,6 +56,13 @@ export default function App() {
     }
   }, []);
 
+  const refreshTransactions = useCallback(async () => {
+    try {
+      const { transactions } = await api.getTransactions();
+      setTransactions(transactions);
+    } catch {}
+  }, []);
+
   const handleSetBudget = useCallback(async (categoryId: string, planned: number) => {
     setBudgets((prev) => ({ ...prev, [categoryId]: planned }));
     if (serverUp) {
@@ -100,6 +107,7 @@ const startLink = async () => {
         accent={ACCENT}
         budgets={budgets}
         onSetBudget={handleSetBudget}
+        onRefreshTransactions={refreshTransactions}
         onToggleDark={() => setDark((v) => !v)}
         {...bankProps}
       />
@@ -132,6 +140,7 @@ const startLink = async () => {
           accent={ACCENT}
           budgets={budgets}
           onSetBudget={handleSetBudget}
+          onRefreshTransactions={refreshTransactions}
           onToggleDark={() => setDark((v) => !v)}
           {...bankProps}
         />

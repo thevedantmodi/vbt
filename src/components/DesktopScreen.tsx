@@ -14,6 +14,7 @@ interface Props {
   accent?: string;
   budgets?: Record<string, number>;
   onSetBudget?: (categoryId: string, planned: number) => void;
+  onRefreshTransactions?: () => void;
   onToggleDark?: () => void;
   linked?: boolean;
   serverUp?: boolean;
@@ -24,7 +25,7 @@ interface Props {
   onUnlink?: () => void;
 }
 
-export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
+export default function DesktopScreen({ transactions = [], dark = false, accent = '#4F63D2', budgets = {}, onSetBudget, onRefreshTransactions, onToggleDark, linked, serverUp, loading, demo, onLink, onSync, onUnlink }: Props) {
   const today = new Date();
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [openId, setOpenId] = useState<string | null>(null);
@@ -134,7 +135,7 @@ export default function DesktopScreen({ transactions = [], dark = false, accent 
 
           {/* transaction panel */}
           {selectedCat && (
-            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} />
+            <TxPanel cat={selectedCat} T={T} dark={dark} year={d.year} isCurrent={d.isCurrent} onClose={() => setOpenId(null)} onSetBudget={onSetBudget ?? (() => {})} onRefreshTransactions={onRefreshTransactions ?? (() => {})} />
           )}
         </div>
       </div>
@@ -186,9 +187,10 @@ interface TxPanelProps {
   isCurrent: boolean;
   onClose: () => void;
   onSetBudget: (categoryId: string, planned: number) => void;
+  onRefreshTransactions: () => void;
 }
 
-function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget }: TxPanelProps) {
+function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget, onRefreshTransactions }: TxPanelProps) {
   const over = cat.diff > 0 && !cat.fixed;
   return (
     <div style={{ borderLeft: `1px solid ${T.hair}`, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)', position: 'sticky', top: 0 }}>
@@ -224,24 +226,22 @@ function TxPanel({ cat, T, dark, year, isCurrent, onClose, onSetBudget }: TxPane
           <div style={{ fontSize: 14, color: T.faint, padding: '16px 0' }}>No transactions this month.</div>
         )}
         {cat.txs.map((t, i) => (
-          <DesktopTxRow key={t.id || i} t={t} i={i} currentCatId={cat.id} year={year} T={T} dark={dark} />
+          <DesktopTxRow key={t.id || i} t={t} i={i} currentCatId={cat.id} year={year} T={T} dark={dark} onRefreshTransactions={onRefreshTransactions} />
         ))}
       </div>
     </div>
   );
 }
 
-interface DesktopTxRowProps { t: Transaction; i: number; currentCatId: string; year: number; T: ThemeTokens; dark: boolean; }
-function DesktopTxRow({ t, i, currentCatId, year, T, dark }: DesktopTxRowProps) {
+interface DesktopTxRowProps { t: Transaction; i: number; currentCatId: string; year: number; T: ThemeTokens; dark: boolean; onRefreshTransactions: () => void; }
+function DesktopTxRow({ t, i, currentCatId, year, T, dark, onRefreshTransactions }: DesktopTxRowProps) {
   const [catId, setCatId] = useState(currentCatId);
-  const [saved, setSaved] = useState(false);
 
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCat = e.target.value;
     setCatId(newCat);
     await api.setOverride(t.id, newCat).catch(() => {});
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    onRefreshTransactions();
   };
 
   return (
@@ -251,10 +251,7 @@ function DesktopTxRow({ t, i, currentCatId, year, T, dark }: DesktopTxRowProps) 
           <div style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
           <div style={{ fontSize: 11.5, color: T.faint, marginTop: 2 }}>{prettyDate(t.date, year)}</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
-          {saved && <span style={{ fontSize: 10.5, color: '#3FAE7A' }}>Saved</span>}
-          <div style={{ fontSize: 13.5, ...NUM }}>{fmt(t.amount, true)}</div>
-        </div>
+        <div style={{ fontSize: 13.5, marginLeft: 12, flexShrink: 0, ...NUM }}>{fmt(t.amount, true)}</div>
       </div>
       <select value={catId} onChange={handleChange} style={{
         marginTop: 5, fontSize: 11, color: T.muted,
