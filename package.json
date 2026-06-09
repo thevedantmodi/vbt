@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "vite",
+    "dev:full": "vercel dev",
     "build": "vite build",
     "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
